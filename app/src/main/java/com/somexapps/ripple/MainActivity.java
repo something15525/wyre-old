@@ -1,15 +1,19 @@
 package com.somexapps.ripple;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.GridView;
 
 import com.somexapps.ripple.adapters.SongGridAdapter;
 import com.somexapps.ripple.models.Song;
+import com.somexapps.ripple.services.MediaService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +62,22 @@ public class MainActivity extends AppCompatActivity {
         refreshMusic();
 
         // Set up adapter and attach
-        SongGridAdapter adapter = new SongGridAdapter(this, mSongs);
+        final SongGridAdapter adapter = new SongGridAdapter(this, mSongs);
         mSongGrid.setAdapter(adapter);
+
+        // Set up onClick listener for playing songs
+        mSongGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Song toPlay = adapter.getItem(position);
+
+                // TODO: Play the song
+                Intent playIntent = new Intent(getApplicationContext(), MediaService.class);
+                playIntent.putExtra(MediaService.EXTRA_MEDIA_URI, toPlay.getData());
+                playIntent.setAction(MediaService.ACTION_PLAY);
+                startService(playIntent);
+            }
+        });
     }
 
     @Override
