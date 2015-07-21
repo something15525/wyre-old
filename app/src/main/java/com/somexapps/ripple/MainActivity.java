@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // TODO: Play the song
                 Intent playIntent = new Intent(getApplicationContext(), MediaService.class);
-                playIntent.putExtra(MediaService.EXTRA_MEDIA_URI, toPlay.getData());
+                playIntent.putExtra(MediaService.EXTRA_SONG_DATA, toPlay);
                 playIntent.setAction(MediaService.ACTION_PLAY);
                 startService(playIntent);
             }

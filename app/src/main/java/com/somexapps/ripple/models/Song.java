@@ -1,5 +1,8 @@
 package com.somexapps.ripple.models;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * Copyright 2015 Michael Limb
  * <p/>
@@ -15,13 +18,56 @@ package com.somexapps.ripple.models;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class Song {
+public class Song implements Parcelable {
     private String mArtist;
     private String mTitle;
     private String mData;
     private String mDisplayName;
     private String mDuration;
     private String mAlbumArtPath;
+
+    public Song() {
+        // default constructor
+    }
+
+    public Song(Parcel source) {
+        // Read it all back in
+        mArtist = source.readString();
+        mTitle = source.readString();
+        mData = source.readString();
+        mDisplayName = source.readString();
+        mDuration = source.readString();
+        mAlbumArtPath = source.readString();
+    }
+
+    public static final Creator CREATOR = new Creator() {
+        @Override
+        public Object createFromParcel(Parcel source) {
+            return new Song(source);
+        }
+
+        @Override
+        public Object[] newArray(int size) {
+            return new Song[size];
+        }
+    };
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        // Write all the strings
+        dest.writeString(mArtist);
+        dest.writeString(mTitle);
+        dest.writeString(mData);
+        dest.writeString(mDisplayName);
+        dest.writeString(mDuration);
+        dest.writeString(mAlbumArtPath);
+    }
+
+    @Override
+    public int describeContents() {
+        // do nothing here for now
+        return 0;
+    }
 
     public String getArtist() {
         return mArtist;

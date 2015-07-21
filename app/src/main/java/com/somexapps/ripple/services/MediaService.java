@@ -1,13 +1,10 @@
 package com.somexapps.ripple.services;
 
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.session.MediaSessionManager;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationManagerCompat;
@@ -18,6 +15,7 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import com.somexapps.ripple.R;
+import com.somexapps.ripple.models.Song;
 
 import java.io.IOException;
 
@@ -47,15 +45,15 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
     public final static String ACTION_NEXT = "action_next";
     public final static String ACTION_PREVIOUS = "action_previous";
 
-    public final static String EXTRA_MEDIA_URI = "media_uri";
+    public final static String EXTRA_SONG_DATA = "song_data";
 
     private final static String MEDIA_SESSION_TAG = "media_session_tag";
     private final static int MEDIA_NOTFICATION_REQUEST_CODE = 1;
 
     /**
-     * The URI for the currently playing song.
+     * The data for the currently playing song.
      */
-    private String playingSongUri;
+    private Song playingSong;
 
     /**
      * Boolean to tell whether or not the MediaPlayer is paused.
@@ -177,36 +175,45 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
 
     private void handleIntent(Intent intent) {
         if (intent != null) {
+            Song toPlay = null;
+
+            // Check to see if a song was passed
+            if (intent.getExtras() != null) {
+                toPlay = intent.getExtras().getParcelable(EXTRA_SONG_DATA);
+            }
+
             switch (intent.getAction()) {
                 case ACTION_PLAY:
-                    // TODO: This will cause problems when trying to play other songs when paused.
+                    // Make sure song is not paused and song we're trying to play is a different one
                     if (!isPaused ||
                             intent.getExtras() != null &&
-                                    !intent.getExtras().getString(EXTRA_MEDIA_URI)
-                                            .equals(playingSongUri)) {
-                        // Get URI for media
-                        // Save playing song uri for later reference
-                        playingSongUri = intent.getExtras().getString(EXTRA_MEDIA_URI);
+                                    !toPlay.getData().equals(playingSong.getData())) {
+                        // Make sure that we have a song to play
+                        if (toPlay != null) {
+                            // Get URI for media
+                            // Save playing song uri for later reference
+                            playingSong = toPlay;
 
-                        // Reset the media player if not null, otherwise recreate it
-                        if (mediaPlayer != null) {
-                            mediaPlayer.reset();
-                        } else {
-                            mediaPlayer = new MediaPlayer();
-                        }
+                            // Reset the media player if not null, otherwise recreate it
+                            if (mediaPlayer != null) {
+                                mediaPlayer.reset();
+                            } else {
+                                mediaPlayer = new MediaPlayer();
+                            }
 
-                        // Try to prepare the media for playing
-                        try {
-                            // Set the data source from the grabbed URI
-                            mediaPlayer.setDataSource(playingSongUri);
+                            // Try to prepare the media for playing
+                            try {
+                                // Set the data source from the grabbed URI
+                                mediaPlayer.setDataSource(playingSong.getData());
 
-                            // Prepare asynchronously, listener will get called after preparation
-                            mediaPlayer.setOnPreparedListener(this);
-                            mediaPlayer.prepareAsync();
-                        } catch (IOException e) {
-                            // TODO: Handle this error
-                            // Print it to logcat
-                            Log.e(TAG, e.getMessage());
+                                // Prepare asynchronously, listener will get called after preparation
+                                mediaPlayer.setOnPreparedListener(this);
+                                mediaPlayer.prepareAsync();
+                            } catch (IOException e) {
+                                // TODO: Handle this error
+                                // Print it to logcat
+                                Log.e(TAG, e.getMessage());
+                            }
                         }
                     } else {
                         mediaPlayer.start();
@@ -264,8 +271,8 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
         // Create media notification
         android.support.v4.app.NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Song Title")
-                .setContentText("Song Artist")
+                .setContentTitle(playingSong.getTitle())
+                .setContentText(playingSong.getArtist())
                 .setDeleteIntent(pendingIntent)
                 .setStyle(style);
 
@@ -297,8 +304,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
         // Play the song
         mediaPlayer.start();
 
-        // Set up the notification
-
+        // Let transport controls know we're playing to build the notification
         mediaController.getTransportControls().play();
     }
 
