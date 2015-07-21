@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Ripple</string>
 
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <!-- Music notification controls -->
+    <string name="media_service_notification_next">Next</string>
+    <string name="media_service_notification_prev">Previous</string>
+    <string name="media_service_notification_pause">Pause</string>
+    <string name="media_service_notification_play">Play</string>
 </resources>

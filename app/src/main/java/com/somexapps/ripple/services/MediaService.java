@@ -126,14 +126,16 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             public void onPlay() {
                 super.onPlay();
                 Log.d(TAG, "Playing media");
-                buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE));
+                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                        getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
             @Override
             public void onPause() {
                 super.onPause();
                 Log.d(TAG, "Pausing media");
-                buildNotification(generateAction(android.R.drawable.ic_media_play, "Play", ACTION_PLAY));
+                buildNotification(generateAction(android.R.drawable.ic_media_play,
+                        getString(R.string.media_service_notification_play), ACTION_PLAY));
             }
 
             @Override
@@ -277,9 +279,11 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                 .setStyle(style);
 
         // Add button actions
-        builder.addAction(generateAction(android.R.drawable.ic_media_previous, "Previous", ACTION_PREVIOUS));
+        builder.addAction(generateAction(android.R.drawable.ic_media_previous,
+                getString(R.string.media_service_notification_prev), ACTION_PREVIOUS));
         builder.addAction(action);
-        builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
+        builder.addAction(generateAction(android.R.drawable.ic_media_next,
+                getString(R.string.media_service_notification_next), ACTION_NEXT));
         style.setShowActionsInCompactView(0, 1, 2);
 
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
