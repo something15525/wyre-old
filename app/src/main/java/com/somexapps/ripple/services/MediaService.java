@@ -52,6 +52,14 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
     private final static String MEDIA_SESSION_TAG = "media_session_tag";
     private final static int MEDIA_NOTFICATION_REQUEST_CODE = 1;
 
+    /**
+     * The URI for the currently playing song.
+     */
+    private String playingSongUri;
+
+    /**
+     * Boolean to tell whether or not the MediaPlayer is paused.
+     */
     private boolean isPaused = false;
 
     /**
@@ -172,10 +180,13 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             switch (intent.getAction()) {
                 case ACTION_PLAY:
                     // TODO: This will cause problems when trying to play other songs when paused.
-                    if (!isPaused) {
+                    if (!isPaused ||
+                            intent.getExtras() != null &&
+                                    !intent.getExtras().getString(EXTRA_MEDIA_URI)
+                                            .equals(playingSongUri)) {
                         // Get URI for media
-                        // TODO: Check for extras
-                        String mediaData = intent.getExtras().getString(EXTRA_MEDIA_URI);
+                        // Save playing song uri for later reference
+                        playingSongUri = intent.getExtras().getString(EXTRA_MEDIA_URI);
 
                         // Reset the media player if not null, otherwise recreate it
                         if (mediaPlayer != null) {
@@ -187,7 +198,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                         // Try to prepare the media for playing
                         try {
                             // Set the data source from the grabbed URI
-                            mediaPlayer.setDataSource(mediaData);
+                            mediaPlayer.setDataSource(playingSongUri);
 
                             // Prepare asynchronously, listener will get called after preparation
                             mediaPlayer.setOnPreparedListener(this);
