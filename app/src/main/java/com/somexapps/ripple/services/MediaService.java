@@ -115,6 +115,17 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
         // Initialize player
         mediaPlayer = new MediaPlayer();
 
+        // Add listener to handle completion of song
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                // Send intent to play next song in MediaService list
+                Intent nextSong = new Intent(getApplicationContext(), MediaService.class);
+                nextSong.setAction(ACTION_NEXT);
+                startService(nextSong);
+            }
+        });
+
         // Set up session and controller
         // Create the media session
         mediaSession = new MediaSessionCompat(
