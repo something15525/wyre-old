@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Holder for the list of songs.
      */
-    private List<Song> mSongs;
+    private ArrayList<Song> mSongs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,11 +69,10 @@ public class MainActivity extends AppCompatActivity {
         mSongGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Song toPlay = adapter.getItem(position);
-
-                // TODO: Play the song
+                // Play the song
                 Intent playIntent = new Intent(getApplicationContext(), MediaService.class);
-                playIntent.putExtra(MediaService.EXTRA_SONG_DATA, toPlay);
+                playIntent.putParcelableArrayListExtra(MediaService.EXTRA_SONG_LIST, mSongs);
+                playIntent.putExtra(MediaService.EXTRA_SONG_TO_PLAY, position);
                 playIntent.setAction(MediaService.ACTION_PLAY);
                 startService(playIntent);
             }
@@ -145,8 +144,6 @@ public class MainActivity extends AppCompatActivity {
             // Add to the list
             mSongs.add(currentSong);
         }
-
-        // TODO: Save into a database so data can persist
 
         // Close the cursor
         cursor.close();

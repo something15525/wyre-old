@@ -18,6 +18,7 @@ import com.somexapps.ripple.R;
 import com.somexapps.ripple.models.Song;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Copyright 2014, 2015 Michael Limb, paulruiz
@@ -45,15 +46,26 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
     public final static String ACTION_NEXT = "action_next";
     public final static String ACTION_PREVIOUS = "action_previous";
 
-    public final static String EXTRA_SONG_DATA = "song_data";
+    public final static String EXTRA_SONG_TO_PLAY = "song_to_play";
+    public final static String EXTRA_SONG_LIST = "song_list";
 
     private final static String MEDIA_SESSION_TAG = "media_session_tag";
-    private final static int MEDIA_NOTFICATION_REQUEST_CODE = 1;
+    private final static int MEDIA_NOTIFICATION_REQUEST_CODE = 1;
+
+    /**
+     * The list of songs in the queue.
+     */
+    private ArrayList<Song> songsList;
 
     /**
      * The data for the currently playing song.
      */
     private Song playingSong;
+
+    /**
+     * The index of the playing song in the list of songs
+     */
+    private int playingSongIndex;
 
     /**
      * Boolean to tell whether or not the MediaPlayer is paused.
@@ -141,11 +153,21 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             @Override
             public void onSkipToNext() {
                 super.onSkipToNext();
+                Log.d(TAG, "Skipping to next song");
+
+                // Update the notification with the next song info
+                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                        getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
             @Override
             public void onSkipToPrevious() {
                 super.onSkipToPrevious();
+                Log.d(TAG, "Skipping to previous song");
+
+                // Update the notification with the previous song info
+                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                        getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
             @Override
@@ -177,50 +199,19 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
 
     private void handleIntent(Intent intent) {
         if (intent != null) {
-            Song toPlay = null;
-
-            // Check to see if a song was passed
+            int songToPlay = -1;
             if (intent.getExtras() != null) {
-                toPlay = intent.getExtras().getParcelable(EXTRA_SONG_DATA);
+                // Get list of songs
+                songsList = intent.getParcelableArrayListExtra(EXTRA_SONG_LIST);
+
+                // See if song to play was passed
+                songToPlay = intent.getExtras().getInt(EXTRA_SONG_TO_PLAY, -1);
             }
 
             switch (intent.getAction()) {
                 case ACTION_PLAY:
-                    // Make sure song is not paused and song we're trying to play is a different one
-                    if (!isPaused ||
-                            intent.getExtras() != null &&
-                                    !toPlay.getData().equals(playingSong.getData())) {
-                        // Make sure that we have a song to play
-                        if (toPlay != null) {
-                            // Get URI for media
-                            // Save playing song uri for later reference
-                            playingSong = toPlay;
-
-                            // Reset the media player if not null, otherwise recreate it
-                            if (mediaPlayer != null) {
-                                mediaPlayer.reset();
-                            } else {
-                                mediaPlayer = new MediaPlayer();
-                            }
-
-                            // Try to prepare the media for playing
-                            try {
-                                // Set the data source from the grabbed URI
-                                mediaPlayer.setDataSource(playingSong.getData());
-
-                                // Prepare asynchronously, listener will get called after preparation
-                                mediaPlayer.setOnPreparedListener(this);
-                                mediaPlayer.prepareAsync();
-                            } catch (IOException e) {
-                                // TODO: Handle this error
-                                // Print it to logcat
-                                Log.e(TAG, e.getMessage());
-                            }
-                        }
-                    } else {
-                        mediaPlayer.start();
-                        isPaused = false;
-                    }
+                    // Play the song
+                    playSong(songToPlay);
 
                     // Notify transport controls
                     mediaController.getTransportControls().play();
@@ -242,16 +233,81 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
 
                     break;
                 case ACTION_NEXT:
+                    // Switch to next song if one exists
+                    if (playingSongIndex + 1 < songsList.size()) {
+                        // Go to next song in list
+                        playingSongIndex++;
+
+                        // Play the song
+                        playSong(playingSongIndex);
+                    }
+
                     // Notify transport controls
                     mediaController.getTransportControls().skipToNext();
 
                     break;
                 case ACTION_PREVIOUS:
+                    // Switch to previous song if one exists
+                    if (playingSongIndex - 1 >= 0) {
+                        // Go to previous song in list
+                        playingSongIndex--;
+
+                        // Play the song
+                        playSong(playingSongIndex);
+                    }
+
                     // Notify transport controls
                     mediaController.getTransportControls().skipToPrevious();
 
                     break;
             }
+        }
+    }
+
+    private void playSong(int indexOfSongToPlay) {
+        Song toPlay = null;
+        if (indexOfSongToPlay != -1) {
+            // Save the index
+            playingSongIndex = indexOfSongToPlay;
+
+            toPlay = songsList.get(indexOfSongToPlay);
+        }
+
+        if (toPlay != null) {
+            // Make sure song is not paused and song we're trying to play is a different one
+            if (!isPaused ||
+                    !toPlay.getData().equals(playingSong.getData())) {
+                // Get URI for media
+                // Save playing song uri for later reference
+                playingSong = toPlay;
+
+                // Reset the media player if not null, otherwise recreate it
+                if (mediaPlayer != null) {
+                    mediaPlayer.reset();
+                } else {
+                    mediaPlayer = new MediaPlayer();
+                }
+
+                // Try to prepare the media for playing
+                try {
+                    // Set the data source from the grabbed URI
+                    mediaPlayer.setDataSource(playingSong.getData());
+
+                    // Prepare asynchronously, listener will get called after preparation
+                    mediaPlayer.setOnPreparedListener(this);
+                    mediaPlayer.prepareAsync();
+                } catch (IOException e) {
+                    // TODO: Handle this error
+                    // Print it to logcat
+                    Log.e(TAG, e.getMessage());
+                }
+            } else {
+                mediaPlayer.start();
+                isPaused = false;
+            }
+        } else if (isPaused) {
+            mediaPlayer.start();
+            isPaused = false;
         }
     }
 
@@ -265,7 +321,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
         // TODO: Should this have 0 as the flag?
         PendingIntent pendingIntent = PendingIntent.getService(
                 getApplicationContext(),
-                MEDIA_NOTFICATION_REQUEST_CODE,
+                MEDIA_NOTIFICATION_REQUEST_CODE,
                 intent,
                 0
         );
@@ -278,27 +334,68 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                 .setDeleteIntent(pendingIntent)
                 .setStyle(style);
 
-        // Add button actions
-        builder.addAction(generateAction(android.R.drawable.ic_media_previous,
-                getString(R.string.media_service_notification_prev), ACTION_PREVIOUS));
+        // Check to see if we have a next or previous song to play
+        boolean previousDisabled = false;
+        boolean nextDisabled = false;
+
+        if (songsList.size() == 1) {
+            previousDisabled = true;
+            nextDisabled = true;
+        } else if (playingSongIndex == 0) {
+            previousDisabled = true;
+        } else if (playingSongIndex == songsList.size() - 1) {
+            nextDisabled = true;
+        }
+
+        // Add previous action if there is previous media
+        if (!previousDisabled) {
+            builder.addAction(generateAction(android.R.drawable.ic_media_previous,
+                    getString(R.string.media_service_notification_prev), ACTION_PREVIOUS));
+        }
+
+        // Add play/pause action
         builder.addAction(action);
-        builder.addAction(generateAction(android.R.drawable.ic_media_next,
-                getString(R.string.media_service_notification_next), ACTION_NEXT));
-        style.setShowActionsInCompactView(0, 1, 2);
+
+        // Add next action if there is next media
+        if (!nextDisabled) {
+            builder.addAction(generateAction(android.R.drawable.ic_media_next,
+                    getString(R.string.media_service_notification_next), ACTION_NEXT));
+        }
+
+        // Show buttons based on state
+        if (previousDisabled && nextDisabled) {
+            style.setShowActionsInCompactView(0);
+        } else if (previousDisabled || nextDisabled) {
+            style.setShowActionsInCompactView(0, 1);
+        } else {
+            style.setShowActionsInCompactView(0, 1, 2);
+        }
+
+        /**
+         * Check if we are going to a play state by checking to see if the middle
+         * action is getting set to Pause
+         */
+        if (action.getTitle().equals(getString(R.string.media_service_notification_pause))) {
+            builder.setOngoing(true);
+        } else {
+            builder.setOngoing(false);
+        }
 
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
-        managerCompat.notify(MEDIA_NOTFICATION_REQUEST_CODE, builder.build());
+        managerCompat.notify(MEDIA_NOTIFICATION_REQUEST_CODE, builder.build());
     }
 
-    private android.support.v4.app.NotificationCompat.Action generateAction(int icon, String title, String intentAction) {
+    private android.support.v4.app.NotificationCompat.Action generateAction(
+            int icon, String title, String intentAction) {
         Intent intent = new Intent(getApplicationContext(), MediaService.class);
         intent.setAction(intentAction);
         PendingIntent pendingIntent = PendingIntent.getService(
                 getApplicationContext(),
-                MEDIA_NOTFICATION_REQUEST_CODE,
+                MEDIA_NOTIFICATION_REQUEST_CODE,
                 intent,
                 0
         );
+
         return new android.support.v4.app.NotificationCompat.Action.Builder(
                 icon, title, pendingIntent).build();
     }
