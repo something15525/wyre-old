@@ -2,6 +2,7 @@ package com.somexapps.ripple.models;
 
 /**
  * Copyright 2015 Michael Limb, Marcus Pöhls
+ * Inspired from https://futurestud.io/blog/oauth-2-on-android-with-retrofit/
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
