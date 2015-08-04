@@ -11,4 +11,12 @@
         android:layout_width="match_parent"
         android:numColumns="auto_fit"/>
 
+    <Button
+        android:id="@+id/activity_main_test_url_call"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:text="Login with SoundCloud"/>
+
 </RelativeLayout>
