@@ -1,8 +1,17 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
+    </style>
+
+    <!-- Style for the toolbar -->
+    <style name="AppTheme.Toolbar" parent="Theme.AppCompat.Light">
+        <item name="colorPrimary">#1C6BA0</item>
+        <item name="colorPrimaryDark">#114060</item>
+        <item name="colorAccent">#4C801A</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
     </style>
 
 </resources>

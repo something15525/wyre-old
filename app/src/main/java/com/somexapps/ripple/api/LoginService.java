@@ -1,7 +1,5 @@
 package com.somexapps.ripple.api;
 
-import com.somexapps.ripple.models.AccessToken;
-
 import retrofit.http.Body;
 import retrofit.http.POST;
 import retrofit.http.Query;
@@ -27,7 +25,7 @@ public interface LoginService {
     String BASE_URL = "https://api.soundcloud.com/";
 
     @POST("/oauth2/token")
-    AccessToken getAccessToken(@Query("client_id") String clientId,
+    AccessTokenResult getAccessToken(@Query("client_id") String clientId,
                                @Query("client_secret") String clientSecret,
                                @Query("code") String code,
                                @Query("grant_type") String grantType,

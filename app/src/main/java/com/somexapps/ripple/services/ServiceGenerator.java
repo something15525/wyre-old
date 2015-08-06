@@ -2,7 +2,7 @@ package com.somexapps.ripple.services;
 
 import android.util.Base64;
 
-import com.somexapps.ripple.models.AccessToken;
+import com.somexapps.ripple.api.AccessTokenResult;
 import com.squareup.okhttp.OkHttpClient;
 
 import retrofit.RequestInterceptor;
@@ -65,7 +65,7 @@ public class ServiceGenerator {
     }
 
     public static <S> S createService(Class<S> serviceClass, String baseUrl,
-                                      final AccessToken accessToken) {
+                                      final AccessTokenResult accessToken) {
         // Create builder for rest adapter with baseUrl and client
         RestAdapter.Builder builder = new RestAdapter.Builder()
                 .setEndpoint(baseUrl)

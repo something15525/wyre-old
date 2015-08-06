@@ -2,30 +2,46 @@ package com.somexapps.ripple.activities;
 
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.provider.MediaStore;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.GridView;
 
+import com.mikepenz.materialdrawer.Drawer;
+import com.mikepenz.materialdrawer.DrawerBuilder;
+import com.mikepenz.materialdrawer.accountswitcher.AccountHeader;
+import com.mikepenz.materialdrawer.accountswitcher.AccountHeaderBuilder;
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.somexapps.ripple.R;
 import com.somexapps.ripple.adapters.SongGridAdapter;
+import com.somexapps.ripple.api.SoundCloudClient;
+import com.somexapps.ripple.api.SoundCloudUserResult;
 import com.somexapps.ripple.models.AccessToken;
-import com.somexapps.ripple.api.LoginService;
 import com.somexapps.ripple.models.Song;
 import com.somexapps.ripple.services.MediaService;
 import com.somexapps.ripple.services.ServiceGenerator;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import io.realm.Realm;
+import io.realm.RealmQuery;
+import io.realm.RealmResults;
 
 /**
  * Copyright 2015 Michael Limb
@@ -47,22 +63,63 @@ public class MainActivity extends AppCompatActivity {
      * Begin view bindings
      */
     @Bind(R.id.activity_main_grid_view) GridView mSongGrid;
-    @Bind(R.id.activity_main_test_url_call) Button mGetUrlButton;
     /**
      * End view bindings
      */
-
-    private final String redirectUri = "your://redirecturi";
 
     /**
      * Holder for the list of songs.
      */
     private ArrayList<Song> mSongs;
 
+    private AccountHeader appDrawerHeader;
+    private Drawer appDrawer;
+
+    private ArrayList<IProfile> appDrawerProfiles;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Toolbar appToolbar = (Toolbar) findViewById(R.id.activity_main_toolbar);
+
+        setSupportActionBar(appToolbar);
+
+        // Set up account header
+        appDrawerHeader = new AccountHeaderBuilder()
+                .withActivity(this)
+                .withHeaderBackground(R.color.primary_dark)
+                .addProfiles(
+                        new ProfileDrawerItem()
+                                .withName(getString(R.string.account_header_drawer_switch_account_title))
+                                .withIcon(getResources().getDrawable(android.R.drawable.btn_plus))
+                                .setSelectable(false)
+                )
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
+                        // Check to make sure "Add Account" was clicked
+                        // TODO: Logic here to check if we're already logged in
+                        if (iProfile.getName() != null &&
+                                iProfile.getName().equals(getString(R.string.account_header_drawer_switch_account_title))) {
+                            // Start login activity
+                            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                        }
+                        return false;
+                    }
+                })
+                .build();
+
+        // Grab profiles
+        appDrawerProfiles = appDrawerHeader.getProfiles();
+
+        // Set up the drawer
+        appDrawer = new DrawerBuilder()
+                .withActivity(this)
+                .withToolbar(appToolbar)
+                .withAccountHeader(appDrawerHeader)
+                .build();
 
         // Bind views
         ButterKnife.bind(this);
@@ -86,66 +143,112 @@ public class MainActivity extends AppCompatActivity {
                 startService(playIntent);
             }
         });
-
-        mGetUrlButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse(LoginService.LOGIN_URL +
-                                "connect?client_id=" + getString(R.string.soundcloud_client_id) +
-                                "&client_secret=" + getString(R.string.soundcloud_client_secret) +
-                                "&redirect_uri=" + redirectUri +
-                                "&response_type=code" +
-                                "&display=popup")
-                );
-
-                startActivity(intent);
-            }
-        });
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onStart() {
+        super.onStart();
 
-        // Used to grab URI from Oauth2 login
-        Uri uri = getIntent().getData();
+        // Make sure profiles are up to date
+        updateProfiles();
+    }
 
-        if (uri != null && uri.toString().startsWith(redirectUri)) {
-            // Grab the auth code
-            final String code = uri.getQueryParameter("code");
+    /**
+     * This method checks the Realm database for any access tokens, then updates the profiles based
+     * on the result.
+     */
+    private void updateProfiles() {
+        Realm theRealm = Realm.getInstance(this);
+        RealmQuery<AccessToken> accessQuery = new RealmQuery<>(theRealm, AccessToken.class);
+        RealmResults<AccessToken> accessResults = accessQuery.findAll();
 
-            // Make sure we got a code
-            if (code != null) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        // Get the access token
-                        LoginService loginService = ServiceGenerator.createService(
-                                LoginService.class, LoginService.BASE_URL,
-                                getString(R.string.soundcloud_client_id),
-                                getString(R.string.soundcloud_client_secret));
-                        final AccessToken accessToken = loginService.getAccessToken(
-                                getString(R.string.soundcloud_client_id),
-                                getString(R.string.soundcloud_client_secret),
-                                code, "authorization_code", redirectUri, "");
+        if (accessResults.size() > 0) {
+            AccessToken theToken = accessResults.first();
+
+            final String oauthToken = theToken.getAccessToken();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    // Perform query for user data.
+                    SoundCloudClient soundCloudClient = ServiceGenerator.createService(
+                            SoundCloudClient.class,
+                            SoundCloudClient.BASE_URL
+                    );
+
+                    SoundCloudUserResult userResult =
+                            soundCloudClient.getUser(oauthToken);
+
+                    // Get list of profiles (should be just one)
+                    appDrawerProfiles = appDrawerHeader.getProfiles();
+
+                    // Modify the first drawer profile
+                    if (appDrawerProfiles.size() > 0) {
+                        // Grab profile and modify
+                        final IProfile profile = appDrawerProfiles.remove(0);
+                        profile.setName(userResult.getFull_name());
+                        profile.setEmail(userResult.getUsername());
+                        profile.setIconBitmap(null);
+
+                        // Get profile image
+                        new OkHttpClient()
+                                .newCall(
+                                        new Request.Builder()
+                                                .url(userResult.getAvatar_url())
+                                                .build())
+                                .enqueue(new Callback() {
+                                    @Override
+                                    public void onFailure(Request request, IOException e) {
+                                        Log.e("TAG", "TAG");
+                                    }
+
+                                    @Override
+                                    public void onResponse(Response response) throws IOException {
+                                        Bitmap bitmap = BitmapFactory.decodeStream(
+                                                response.body().byteStream()
+                                        );
+
+                                        if (bitmap != null) {
+                                            // Set the bitmap to the profile
+                                            profile.setIconBitmap(bitmap);
+
+                                            // Find the profile in the list and update it if it exists
+                                            int profileLocation = appDrawerProfiles.indexOf(profile);
+                                            if (profileLocation > -1) {
+                                                // Update the profile in the list
+                                                appDrawerProfiles.set(profileLocation, profile);
+                                            } else {
+                                                // Add the profile to the list
+                                                appDrawerProfiles.add(0, profile);
+                                            }
+
+                                            // Update profiles on UI thread
+                                            MainActivity.this.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    appDrawerHeader.setProfiles(appDrawerProfiles);
+                                                    appDrawerHeader.setActiveProfile(profile);
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+
+                        // Clear profiles and add modified one
+                        appDrawerProfiles.add(0, profile);
+
+                        // Replace with new one
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                new AlertDialog.Builder(MainActivity.this)
-                                        .setTitle("Login Successful")
-                                        .setMessage("Access Token: " + accessToken.getAccessToken()
-                                                + "\nScope: " + accessToken.getScope())
-                                        .setNeutralButton(android.R.string.ok, null)
-                                        .show();
+                                // Update profiles on UI thread
+                                appDrawerHeader.setProfiles(appDrawerProfiles);
+                                appDrawerHeader.setActiveProfile(profile);
                             }
                         });
                     }
-                }).start();
-            } else if (uri.getQueryParameter("error") != null) {
-                // TODO: Log out error
-            }
+                }
+            }).start();
         }
     }
 

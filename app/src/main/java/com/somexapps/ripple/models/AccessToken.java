@@ -1,5 +1,8 @@
 package com.somexapps.ripple.models;
 
+import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
+
 /**
  * Copyright 2015 Michael Limb, Marcus Pöhls
  * Inspired from https://futurestud.io/blog/oauth-2-on-android-with-retrofit/
@@ -16,17 +19,32 @@ package com.somexapps.ripple.models;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class AccessToken {
-
-    private String access_token;
+public class AccessToken extends RealmObject {
+    @PrimaryKey
+    private String accessToken;
     private String scope;
 
+    public AccessToken() {
+    }
+
+    public AccessToken(String accessToken, String scope) {
+        this.accessToken = accessToken;
+        this.scope = scope;
+    }
+
     public String getAccessToken() {
-        return access_token;
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
     public String getScope() {
         return scope;
     }
-}
 
+    public void setScope(String scope) {
+        this.scope = scope;
+    }
+}

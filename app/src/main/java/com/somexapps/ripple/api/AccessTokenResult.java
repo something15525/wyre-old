@@ -1,11 +1,8 @@
 package com.somexapps.ripple.api;
 
-import retrofit.http.GET;
-import retrofit.http.Path;
-import retrofit.http.Query;
-
 /**
- * Copyright 2015 Michael Limb
+ * Copyright 2015 Michael Limb, Marcus Pöhls
+ * Inspired from https://futurestud.io/blog/oauth-2-on-android-with-retrofit/
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +16,16 @@ import retrofit.http.Query;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public interface SoundCloudClient {
-    /**
-     * The base url for the SoundCloud API.
-     */
-    String BASE_URL = "https://api.soundcloud.com";
+public class AccessTokenResult {
+    private String access_token;
+    private String scope;
 
-    /**
-     * Grabs the SoundCloud user's information and save it in a result
-     * @param oauthToken The authorization code to identify the user.
-     * @return The result containing the user's information.
-     */
-    @GET("/me")
-    SoundCloudUserResult getUser(
-            @Query("oauth_token") String oauthToken
-    );
+    public String getAccessToken() {
+        return access_token;
+    }
+
+    public String getScope() {
+        return scope;
+    }
 }
+

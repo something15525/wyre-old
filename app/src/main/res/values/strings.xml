@@ -6,4 +6,7 @@
     <string name="media_service_notification_prev">Previous</string>
     <string name="media_service_notification_pause">Pause</string>
     <string name="media_service_notification_play">Play</string>
+
+    <!-- Account Header Drawer Section -->
+    <string name="account_header_drawer_switch_account_title">Add Account</string>
 </resources>
