@@ -4,9 +4,10 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -99,14 +100,9 @@ public class MainActivity extends AppCompatActivity {
                 .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
                     @Override
                     public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
-                        // Check to make sure "Add Account" was clicked
-                        // TODO: Logic here to check if we're already logged in
-                        if (iProfile.getName() != null &&
-                                iProfile.getName().equals(getString(R.string.account_header_drawer_switch_account_title))) {
-                            // Start login activity
-                            startActivity(new Intent(MainActivity.this, LoginActivity.class));
-                        }
-                        return false;
+                        // Show login activity
+                        startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                        return true;
                     }
                 })
                 .build();
@@ -158,13 +154,17 @@ public class MainActivity extends AppCompatActivity {
      * on the result.
      */
     private void updateProfiles() {
+        // Get realm instance and perform query
         Realm theRealm = Realm.getInstance(this);
         RealmQuery<AccessToken> accessQuery = new RealmQuery<>(theRealm, AccessToken.class);
         RealmResults<AccessToken> accessResults = accessQuery.findAll();
 
+        // Make sure we have results, otherwise go back to placeholder
         if (accessResults.size() > 0) {
+            // Get the first token (should only be one)
             AccessToken theToken = accessResults.first();
 
+            // Grab string for oauthToken so we can cross threads with it.
             final String oauthToken = theToken.getAccessToken();
 
             new Thread(new Runnable() {
@@ -212,15 +212,7 @@ public class MainActivity extends AppCompatActivity {
                                             // Set the bitmap to the profile
                                             profile.setIconBitmap(bitmap);
 
-                                            // Find the profile in the list and update it if it exists
-                                            int profileLocation = appDrawerProfiles.indexOf(profile);
-                                            if (profileLocation > -1) {
-                                                // Update the profile in the list
-                                                appDrawerProfiles.set(profileLocation, profile);
-                                            } else {
-                                                // Add the profile to the list
-                                                appDrawerProfiles.add(0, profile);
-                                            }
+                                            updateOrAddToProfileList(profile);
 
                                             // Update profiles on UI thread
                                             MainActivity.this.runOnUiThread(new Runnable() {
@@ -234,21 +226,53 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
 
-                        // Clear profiles and add modified one
-                        appDrawerProfiles.add(0, profile);
-
-                        // Replace with new one
-                        MainActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                // Update profiles on UI thread
-                                appDrawerHeader.setProfiles(appDrawerProfiles);
-                                appDrawerHeader.setActiveProfile(profile);
-                            }
-                        });
+                        // Update in list
+                        updateOrAddToProfileList(profile);
                     }
                 }
             }).start();
+        } else {
+            // Grab profile and modify to add account
+            final IProfile profile = appDrawerProfiles.remove(0);
+            profile.setName(getString(R.string.account_header_drawer_switch_account_title));
+            profile.setEmail(null);
+            profile.setIconBitmap(null);
+
+            updateOrAddToProfileList(profile);
+        }
+    }
+
+    private void updateOrAddToProfileList(final IProfile profileToUpdate) {
+        // Find the profile in the list and update it if it exists
+        int profileLocation = appDrawerProfiles.indexOf(profileToUpdate);
+        if (profileLocation > -1) {
+            // Update the profile in the list
+            appDrawerProfiles.set(profileLocation, profileToUpdate);
+        } else {
+            // Add the profile to the list
+            appDrawerProfiles.add(0, profileToUpdate);
+        }
+
+        // Create runnable to update UI
+        Runnable updateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // Update profiles
+                appDrawerHeader.setProfiles(appDrawerProfiles);
+                appDrawerHeader.setActiveProfile(profileToUpdate);
+
+                // Make sure AccountHeader selection is closed
+                if (appDrawerHeader.isSelectionListShown()) {
+                    appDrawerHeader.toggleSelectionList(MainActivity.this);
+                }
+            }
+        };
+
+        // Update the UI on main thread
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            updateRunnable.run();
+        } else {
+            MainActivity.this.runOnUiThread(updateRunnable);
         }
     }
 

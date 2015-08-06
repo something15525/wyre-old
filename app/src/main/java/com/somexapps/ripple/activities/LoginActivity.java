@@ -1,11 +1,9 @@
 package com.somexapps.ripple.activities;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
@@ -13,14 +11,16 @@ import android.view.View;
 import android.widget.Button;
 
 import com.somexapps.ripple.R;
-import com.somexapps.ripple.api.LoginService;
 import com.somexapps.ripple.api.AccessTokenResult;
+import com.somexapps.ripple.api.LoginService;
 import com.somexapps.ripple.models.AccessToken;
 import com.somexapps.ripple.services.ServiceGenerator;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import io.realm.Realm;
+import io.realm.RealmQuery;
+import io.realm.RealmResults;
 
 /**
  * Copyright 2015 Michael Limb
@@ -43,11 +43,12 @@ public class LoginActivity extends AppCompatActivity {
      */
     @Bind(R.id.activity_login_toolbar) Toolbar toolbar;
     @Bind(R.id.activity_login_button) Button loginButton;
+    @Bind(R.id.activity_logout_button) Button logoutButton;
 
     /**
-     * Used for storing the parcelable AccessTokenResult when logged in with SoundCloud.
+     * Used for saving/retrieving the AccessToken.
      */
-    public static final String EXTRA_ACCESS_TOKEN_BUNDLE = "access_token_bundle";
+    private Realm realmInstance;
 
     /**
      * Used for redirection back to this activity from the WebView after authentication.
@@ -73,6 +74,22 @@ public class LoginActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
+        // Open realm instance
+        realmInstance = Realm.getInstance(this);
+
+        // Query for AccessToken
+        RealmQuery<AccessToken> accessQuery = realmInstance.where(AccessToken.class);
+        RealmResults<AccessToken> accessResults = accessQuery.findAll();
+
+        // If we have results, disable login and enable logout
+        if (accessResults.size() > 0) {
+            loginButton.setEnabled(false);
+            logoutButton.setEnabled(true);
+        } else {
+            loginButton.setEnabled(true);
+            logoutButton.setEnabled(false);
+        }
+
         // Set up login button
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -90,6 +107,30 @@ public class LoginActivity extends AppCompatActivity {
 
                 // Start intent and finish current activity
                 startActivity(intent);
+                finish();
+            }
+        });
+
+        // Set up logout button
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Get new instance of realm since it's not thread-safe
+                Realm localRealmInstance = Realm.getInstance(LoginActivity.this);
+                localRealmInstance.beginTransaction();
+
+                RealmResults<AccessToken> results =
+                        localRealmInstance.where(AccessToken.class).findAll();
+
+                for (int i = 0; i < results.size(); i++) {
+                    // Remove each from Realm
+                    results.get(i).removeFromRealm();
+                }
+
+                // End transaction
+                localRealmInstance.commitTransaction();
+
+                // End activity
                 finish();
             }
         });
@@ -121,41 +162,25 @@ public class LoginActivity extends AppCompatActivity {
                                 getString(R.string.soundcloud_client_secret),
                                 code, "authorization_code", redirectUri, "");
 
-                        // Post success
-                        LoginActivity.this.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                new AlertDialog.Builder(LoginActivity.this)
-                                        .setTitle("Login Successful")
-                                        .setMessage("Access Token: " + accessTokenResult.getAccessToken()
-                                                + "\nScope: " + accessTokenResult.getScope())
-                                        .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                            @Override
-                                            public void onClick(DialogInterface dialog, int which) {
-                                                // Open up db instance
-                                                Realm theRealm = Realm.getInstance(LoginActivity.this);
-                                                theRealm.beginTransaction();
+                        // Open up db instance
+                        Realm theRealm = Realm.getInstance(LoginActivity.this);
+                        theRealm.beginTransaction();
 
-                                                // Create access token
-                                                AccessToken accessToken = new AccessToken(
-                                                        accessTokenResult.getAccessToken(),
-                                                        accessTokenResult.getScope()
-                                                );
+                        // Create access token
+                        AccessToken accessToken = new AccessToken(
+                                accessTokenResult.getAccessToken(),
+                                accessTokenResult.getScope()
+                        );
 
-                                                // Copy to realm
-                                                theRealm.copyToRealmOrUpdate(accessToken);
+                        // Copy to realm
+                        theRealm.copyToRealmOrUpdate(accessToken);
 
-                                                // Finish transaction
-                                                theRealm.commitTransaction();
-                                                theRealm.close();
+                        // Finish transaction
+                        theRealm.commitTransaction();
+                        theRealm.close();
 
-                                                // Close activity
-                                                finish();
-                                            }
-                                        })
-                                        .show();
-                            }
-                        });
+                        // Close activity
+                        finish();
                     }
                 }).start();
             } else if (uri.getQueryParameter("errors") != null) {
