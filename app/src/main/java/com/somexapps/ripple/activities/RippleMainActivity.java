@@ -16,10 +16,13 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
+import com.mikepenz.iconics.IconicsDrawable;
+import com.mikepenz.iconics.typeface.FontAwesome;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.accountswitcher.AccountHeader;
 import com.mikepenz.materialdrawer.accountswitcher.AccountHeaderBuilder;
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.somexapps.ripple.R;
@@ -43,6 +46,7 @@ import butterknife.ButterKnife;
 import io.realm.Realm;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import retrofit.RetrofitError;
 
 /**
  * Copyright 2015 Michael Limb
@@ -59,7 +63,10 @@ import io.realm.RealmResults;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class MainActivity extends AppCompatActivity {
+public class RippleMainActivity extends AppCompatActivity {
+    // Used for logging
+    private final static String TAG = RippleMainActivity.class.getSimpleName();
+
     /**
      * Begin view bindings
      */
@@ -101,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
                         // Show login activity
-                        startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                        startActivity(new Intent(RippleMainActivity.this, LoginActivity.class));
                         return true;
                     }
                 })
@@ -115,6 +122,16 @@ public class MainActivity extends AppCompatActivity {
                 .withActivity(this)
                 .withToolbar(appToolbar)
                 .withAccountHeader(appDrawerHeader)
+                .addDrawerItems(
+                        new PrimaryDrawerItem()
+                                .withName("Listen")
+                                .withIcon(
+                                        new IconicsDrawable(this)
+                                                .icon(FontAwesome.Icon.faw_music)
+                                                .sizeDp(24)
+                                )
+                                .withIconTintingEnabled(true)
+                )
                 .build();
 
         // Bind views
@@ -176,58 +193,62 @@ public class MainActivity extends AppCompatActivity {
                             SoundCloudClient.BASE_URL
                     );
 
-                    SoundCloudUserResult userResult =
-                            soundCloudClient.getUser(oauthToken);
+                    try {
+                        SoundCloudUserResult userResult =
+                                soundCloudClient.getUser(oauthToken);
 
-                    // Get list of profiles (should be just one)
-                    appDrawerProfiles = appDrawerHeader.getProfiles();
+                        // Get list of profiles (should be just one)
+                        appDrawerProfiles = appDrawerHeader.getProfiles();
 
-                    // Modify the first drawer profile
-                    if (appDrawerProfiles.size() > 0) {
-                        // Grab profile and modify
-                        final IProfile profile = appDrawerProfiles.remove(0);
-                        profile.setName(userResult.getFull_name());
-                        profile.setEmail(userResult.getUsername());
-                        profile.setIconBitmap(null);
+                        // Modify the first drawer profile
+                        if (appDrawerProfiles.size() > 0) {
+                            // Grab profile and modify
+                            final IProfile profile = appDrawerProfiles.remove(0);
+                            profile.setName(userResult.getFull_name());
+                            profile.setEmail(userResult.getUsername());
+                            profile.setIconBitmap(null);
 
-                        // Get profile image
-                        new OkHttpClient()
-                                .newCall(
-                                        new Request.Builder()
-                                                .url(userResult.getAvatar_url())
-                                                .build())
-                                .enqueue(new Callback() {
-                                    @Override
-                                    public void onFailure(Request request, IOException e) {
-                                        Log.e("TAG", "TAG");
-                                    }
-
-                                    @Override
-                                    public void onResponse(Response response) throws IOException {
-                                        Bitmap bitmap = BitmapFactory.decodeStream(
-                                                response.body().byteStream()
-                                        );
-
-                                        if (bitmap != null) {
-                                            // Set the bitmap to the profile
-                                            profile.setIconBitmap(bitmap);
-
-                                            updateOrAddToProfileList(profile);
-
-                                            // Update profiles on UI thread
-                                            MainActivity.this.runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    appDrawerHeader.setProfiles(appDrawerProfiles);
-                                                    appDrawerHeader.setActiveProfile(profile);
-                                                }
-                                            });
+                            // Get profile image
+                            new OkHttpClient()
+                                    .newCall(
+                                            new Request.Builder()
+                                                    .url(userResult.getAvatar_url())
+                                                    .build())
+                                    .enqueue(new Callback() {
+                                        @Override
+                                        public void onFailure(Request request, IOException e) {
+                                            Log.e("TAG", "TAG");
                                         }
-                                    }
-                                });
 
-                        // Update in list
-                        updateOrAddToProfileList(profile);
+                                        @Override
+                                        public void onResponse(Response response) throws IOException {
+                                            Bitmap bitmap = BitmapFactory.decodeStream(
+                                                    response.body().byteStream()
+                                            );
+
+                                            if (bitmap != null) {
+                                                // Set the bitmap to the profile
+                                                profile.setIconBitmap(bitmap);
+
+                                                updateOrAddToProfileList(profile);
+
+                                                // Update profiles on UI thread
+                                                RippleMainActivity.this.runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        appDrawerHeader.setProfiles(appDrawerProfiles);
+                                                        appDrawerHeader.setActiveProfile(profile);
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    });
+
+                            // Update in list
+                            updateOrAddToProfileList(profile);
+                        }
+                    } catch (RetrofitError error) {
+                        Log.e(TAG, "Error grabbing user info: " + error.getMessage());
                     }
                 }
             }).start();
@@ -263,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Make sure AccountHeader selection is closed
                 if (appDrawerHeader.isSelectionListShown()) {
-                    appDrawerHeader.toggleSelectionList(MainActivity.this);
+                    appDrawerHeader.toggleSelectionList(RippleMainActivity.this);
                 }
             }
         };
@@ -272,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             updateRunnable.run();
         } else {
-            MainActivity.this.runOnUiThread(updateRunnable);
+            RippleMainActivity.this.runOnUiThread(updateRunnable);
         }
     }
 
