@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -29,10 +30,15 @@ import com.somexapps.ripple.R;
 import com.somexapps.ripple.adapters.SongGridAdapter;
 import com.somexapps.ripple.api.SoundCloudClient;
 import com.somexapps.ripple.api.SoundCloudUserResult;
+import com.somexapps.ripple.api.activities.ActivitiesResult;
+import com.somexapps.ripple.api.activities.CollectionResult;
+import com.somexapps.ripple.api.tracks.SoundCloudTrackResult;
 import com.somexapps.ripple.models.AccessToken;
 import com.somexapps.ripple.models.Song;
 import com.somexapps.ripple.services.MediaService;
 import com.somexapps.ripple.services.ServiceGenerator;
+import com.somexapps.ripple.utils.ConnectionUtils;
+import com.somexapps.ripple.utils.Constants;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -40,6 +46,7 @@ import com.squareup.okhttp.Response;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -79,6 +86,16 @@ public class RippleMainActivity extends AppCompatActivity {
      * Holder for the list of songs.
      */
     private ArrayList<Song> mSongs;
+
+    /**
+     * The client used to communicate with the SoundCloud API.
+     */
+    private SoundCloudClient soundCloudClient;
+
+    /**
+     * The AccessToken used for authenticated SoundCloud requests.
+     */
+    private AccessToken soundCloudAccessToken;
 
     private AccountHeader appDrawerHeader;
     private Drawer appDrawer;
@@ -140,6 +157,27 @@ public class RippleMainActivity extends AppCompatActivity {
         // Refresh list of music
         refreshMusic();
 
+        // Start up SoundCloud client
+        initSoundCloudService();
+
+        // Make sure profiles are up to date
+        updateProfiles();
+
+        // Check if logged in
+        if (getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)) {
+            // TODO: Remove this, data concerns for now, need to cache this result
+            if (ConnectionUtils.isOnWifi(this)) {
+                // Refresh SoundCloud stream
+                refreshSoundCloudTracks();
+            } else {
+                new AlertDialog.Builder(this)
+                        .setMessage("Please connect to WiFi to see your SoundCloud tracks.")
+                        .setNeutralButton(android.R.string.ok, null)
+                        .show();
+            }
+        }
+
         // Set up adapter and attach
         final SongGridAdapter adapter = new SongGridAdapter(this, mSongs);
         mSongGrid.setAdapter(adapter);
@@ -159,11 +197,100 @@ public class RippleMainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onRestart() {
+        super.onRestart();
 
         // Make sure profiles are up to date
         updateProfiles();
+    }
+
+    private void initSoundCloudService() {
+        if (soundCloudClient == null) {
+            soundCloudClient = ServiceGenerator.createService(
+                    SoundCloudClient.class,
+                    SoundCloudClient.BASE_URL
+            );
+        }
+    }
+
+    /**
+     * Queries the SoundCloud API for tracks and updates the UI when finished parsing the data.
+     */
+    private void refreshSoundCloudTracks() {
+        if (soundCloudClient != null &&
+                soundCloudAccessToken != null) {
+            soundCloudClient.getActivities(
+                    soundCloudAccessToken.getAccessToken(),
+                    50,
+                    new retrofit.Callback<ActivitiesResult>() {
+                        @Override
+                        public void success(ActivitiesResult activitiesResult, retrofit.client.Response response) {
+                            Log.d(TAG, "SUCCESSSSS");
+
+                            // Get the collections
+                            List<CollectionResult> collectionResultList =
+                                    activitiesResult.getCollection();
+
+                            // Loop through each and add song
+                            for (CollectionResult result : collectionResultList) {
+                                // Get the track information
+                                SoundCloudTrackResult trackResult = result.getOrigin();
+
+                                // Create song from track information
+                                if (trackResult.isStreamable()
+                                        && trackResult.getStream_url() != null) {
+                                    final Song newSong = new Song();
+                                    newSong.setAlbumArtPath(trackResult.getArtwork_url());
+                                    newSong.setArtist("not yet...");
+                                    newSong.setTitle(trackResult.getTitle());
+                                    // TODO: Set display name?
+                                    newSong.setDuration(Long.toString(trackResult.getDuration()));
+
+                                    new OkHttpClient()
+                                            .newCall(
+                                                    new Request.Builder()
+                                                            .url(trackResult.getStream_url() +
+                                                                    "?client_id=" + getString(R.string.soundcloud_client_id))
+                                                            .build()
+                                            )
+                                            .enqueue(new Callback() {
+                                                @Override
+                                                public void onFailure(Request request, IOException e) {
+                                                    Log.e(TAG, "Error grabbing stream URL: " + e.getMessage());
+                                                }
+
+                                                @Override
+                                                public void onResponse(Response response) throws IOException {
+                                                    if (response.request().httpUrl() != null) {
+                                                        newSong.setData(
+                                                                response.request().httpUrl().url().toString()
+                                                        );
+                                                    }
+
+                                                    // Add to list
+                                                    mSongs.add(newSong);
+                                                }
+                                            });
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void failure(RetrofitError error) {
+                            // Show error on UI thread
+                            RippleMainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    new AlertDialog.Builder(RippleMainActivity.this)
+                                            .setMessage("Error retrieving your SoundCloud Stream.")
+                                            .setNeutralButton(android.R.string.ok, null)
+                                            .show();
+                                }
+                            });
+                        }
+                    }
+            );
+        }
     }
 
     /**
@@ -179,16 +306,10 @@ public class RippleMainActivity extends AppCompatActivity {
         // Make sure we have results, otherwise go back to placeholder
         if (accessResults.size() > 0) {
             // Get the first token (should only be one)
-            AccessToken theToken = accessResults.first();
+            soundCloudAccessToken = accessResults.first();
 
             // Grab string for oauthToken so we can cross threads with it.
-            final String oauthToken = theToken.getAccessToken();
-
-            // Perform query for user data.
-            SoundCloudClient soundCloudClient = ServiceGenerator.createService(
-                    SoundCloudClient.class,
-                    SoundCloudClient.BASE_URL
-            );
+            final String oauthToken = soundCloudAccessToken.getAccessToken();
 
             soundCloudClient.getUser(oauthToken, new retrofit.Callback<SoundCloudUserResult>() {
                 @Override

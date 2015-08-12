@@ -1,5 +1,7 @@
 package com.somexapps.ripple.api;
 
+import com.somexapps.ripple.api.activities.ActivitiesResult;
+
 import retrofit.Callback;
 import retrofit.http.GET;
 import retrofit.http.Query;
@@ -35,5 +37,12 @@ public interface SoundCloudClient {
     void getUser(
             @Query("oauth_token") String oauthToken,
             Callback<SoundCloudUserResult> callback
+    );
+
+    @GET("/me/activities")
+    void getActivities(
+            @Query("oauth_token") String oauthToken,
+            @Query("limit") int limit,
+            Callback<ActivitiesResult> callback
     );
 }
