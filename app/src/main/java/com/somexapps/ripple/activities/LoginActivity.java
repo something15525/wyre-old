@@ -116,9 +116,12 @@ public class LoginActivity extends AppCompatActivity {
                 RealmResults<AccessToken> results =
                         localRealmInstance.where(AccessToken.class).findAll();
 
-                for (int i = 0; i < results.size(); i++) {
-                    // Remove each from Realm
-                    results.get(i).removeFromRealm();
+                // Save results size since it changes when items are removed from the list (obviously)
+                int resultsSize = results.size();
+
+                for (int i = 0; i < resultsSize; i++) {
+                    // Remove each from Realm (needs to be zero each time since list decrements
+                    results.get(0).removeFromRealm();
                 }
 
                 // Flip boolean for shared preferences as logged out

@@ -184,74 +184,73 @@ public class RippleMainActivity extends AppCompatActivity {
             // Grab string for oauthToken so we can cross threads with it.
             final String oauthToken = theToken.getAccessToken();
 
-            new Thread(new Runnable() {
+            // Perform query for user data.
+            SoundCloudClient soundCloudClient = ServiceGenerator.createService(
+                    SoundCloudClient.class,
+                    SoundCloudClient.BASE_URL
+            );
+
+            soundCloudClient.getUser(oauthToken, new retrofit.Callback<SoundCloudUserResult>() {
                 @Override
-                public void run() {
-                    // Perform query for user data.
-                    SoundCloudClient soundCloudClient = ServiceGenerator.createService(
-                            SoundCloudClient.class,
-                            SoundCloudClient.BASE_URL
-                    );
+                public void success(SoundCloudUserResult soundCloudUserResult,
+                                    retrofit.client.Response response) {
+                    // Get list of profiles (should be just one)
+                    appDrawerProfiles = appDrawerHeader.getProfiles();
 
-                    try {
-                        SoundCloudUserResult userResult =
-                                soundCloudClient.getUser(oauthToken);
+                    // Modify the first drawer profile
+                    if (appDrawerProfiles.size() > 0) {
+                        // Grab profile and modify
+                        final IProfile profile = appDrawerProfiles.remove(0);
+                        profile.setName(soundCloudUserResult.getFull_name());
+                        profile.setEmail(soundCloudUserResult.getUsername());
+                        profile.setIconBitmap(null);
 
-                        // Get list of profiles (should be just one)
-                        appDrawerProfiles = appDrawerHeader.getProfiles();
+                        // Get profile image
+                        new OkHttpClient()
+                                .newCall(
+                                        new Request.Builder()
+                                                .url(soundCloudUserResult.getAvatar_url())
+                                                .build())
+                                .enqueue(new Callback() {
+                                    @Override
+                                    public void onFailure(Request request, IOException e) {
+                                        Log.e("TAG", "TAG");
+                                    }
 
-                        // Modify the first drawer profile
-                        if (appDrawerProfiles.size() > 0) {
-                            // Grab profile and modify
-                            final IProfile profile = appDrawerProfiles.remove(0);
-                            profile.setName(userResult.getFull_name());
-                            profile.setEmail(userResult.getUsername());
-                            profile.setIconBitmap(null);
+                                    @Override
+                                    public void onResponse(Response response) throws IOException {
+                                        Bitmap bitmap = BitmapFactory.decodeStream(
+                                                response.body().byteStream()
+                                        );
 
-                            // Get profile image
-                            new OkHttpClient()
-                                    .newCall(
-                                            new Request.Builder()
-                                                    .url(userResult.getAvatar_url())
-                                                    .build())
-                                    .enqueue(new Callback() {
-                                        @Override
-                                        public void onFailure(Request request, IOException e) {
-                                            Log.e("TAG", "TAG");
+                                        if (bitmap != null) {
+                                            // Set the bitmap to the profile
+                                            profile.setIconBitmap(bitmap);
+
+                                            updateOrAddToProfileList(profile);
+
+                                            // Update profiles on UI thread
+                                            RippleMainActivity.this.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    appDrawerHeader.setProfiles(appDrawerProfiles);
+                                                    appDrawerHeader.setActiveProfile(profile);
+                                                }
+                                            });
                                         }
+                                    }
+                                });
 
-                                        @Override
-                                        public void onResponse(Response response) throws IOException {
-                                            Bitmap bitmap = BitmapFactory.decodeStream(
-                                                    response.body().byteStream()
-                                            );
-
-                                            if (bitmap != null) {
-                                                // Set the bitmap to the profile
-                                                profile.setIconBitmap(bitmap);
-
-                                                updateOrAddToProfileList(profile);
-
-                                                // Update profiles on UI thread
-                                                RippleMainActivity.this.runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        appDrawerHeader.setProfiles(appDrawerProfiles);
-                                                        appDrawerHeader.setActiveProfile(profile);
-                                                    }
-                                                });
-                                            }
-                                        }
-                                    });
-
-                            // Update in list
-                            updateOrAddToProfileList(profile);
-                        }
-                    } catch (RetrofitError error) {
-                        Log.e(TAG, "Error grabbing user info: " + error.getMessage());
+                        // Update in list
+                        updateOrAddToProfileList(profile);
                     }
                 }
-            }).start();
+
+                @Override
+                public void failure(RetrofitError error) {
+                    Log.e(TAG, "Error grabbing user info: " + error.getMessage());
+                }
+            });
         } else {
             // Grab profile and modify to add account
             final IProfile profile = appDrawerProfiles.remove(0);

@@ -1,7 +1,7 @@
 package com.somexapps.ripple.api;
 
+import retrofit.Callback;
 import retrofit.http.GET;
-import retrofit.http.Path;
 import retrofit.http.Query;
 
 /**
@@ -28,10 +28,12 @@ public interface SoundCloudClient {
     /**
      * Grabs the SoundCloud user's information and save it in a result
      * @param oauthToken The authorization code to identify the user.
-     * @return The result containing the user's information.
+     * @param callback The method to be called once the result containing
+     *                 the user's information is returned.
      */
     @GET("/me")
-    SoundCloudUserResult getUser(
-            @Query("oauth_token") String oauthToken
+    void getUser(
+            @Query("oauth_token") String oauthToken,
+            Callback<SoundCloudUserResult> callback
     );
 }
