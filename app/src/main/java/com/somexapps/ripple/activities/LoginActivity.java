@@ -15,11 +15,11 @@ import com.somexapps.ripple.api.AccessTokenResult;
 import com.somexapps.ripple.api.LoginService;
 import com.somexapps.ripple.models.AccessToken;
 import com.somexapps.ripple.services.ServiceGenerator;
+import com.somexapps.ripple.utils.Constants;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import io.realm.Realm;
-import io.realm.RealmQuery;
 import io.realm.RealmResults;
 
 /**
@@ -74,15 +74,9 @@ public class LoginActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        // Open realm instance
-        realmInstance = Realm.getInstance(this);
-
-        // Query for AccessToken
-        RealmQuery<AccessToken> accessQuery = realmInstance.where(AccessToken.class);
-        RealmResults<AccessToken> accessResults = accessQuery.findAll();
-
-        // If we have results, disable login and enable logout
-        if (accessResults.size() > 0) {
+        // Check if we are logged in, if so, switch button to logout
+        if (getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)) {
             loginButton.setEnabled(false);
             logoutButton.setEnabled(true);
         } else {
@@ -126,6 +120,12 @@ public class LoginActivity extends AppCompatActivity {
                     // Remove each from Realm
                     results.get(i).removeFromRealm();
                 }
+
+                // Flip boolean for shared preferences as logged out
+                getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)
+                        .apply();
 
                 // End transaction
                 localRealmInstance.commitTransaction();
@@ -178,6 +178,12 @@ public class LoginActivity extends AppCompatActivity {
                         // Finish transaction
                         theRealm.commitTransaction();
                         theRealm.close();
+
+                        // Flip boolean for shared preferences as logged in
+                        getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
+                                .edit()
+                                .putBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, true)
+                                .apply();
 
                         // Close activity
                         finish();
