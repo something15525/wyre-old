@@ -225,8 +225,6 @@ public class RippleMainActivity extends AppCompatActivity {
                     new retrofit.Callback<ActivitiesResult>() {
                         @Override
                         public void success(ActivitiesResult activitiesResult, retrofit.client.Response response) {
-                            Log.d(TAG, "SUCCESSSSS");
-
                             // Get the collections
                             List<CollectionResult> collectionResultList =
                                     activitiesResult.getCollection();
@@ -241,9 +239,8 @@ public class RippleMainActivity extends AppCompatActivity {
                                         && trackResult.getStream_url() != null) {
                                     final Song newSong = new Song();
                                     newSong.setAlbumArtPath(trackResult.getArtwork_url());
-                                    newSong.setArtist("not yet...");
+                                    newSong.setArtist(trackResult.getUser().getUsername());
                                     newSong.setTitle(trackResult.getTitle());
-                                    // TODO: Set display name?
                                     newSong.setDuration(Long.toString(trackResult.getDuration()));
 
                                     new OkHttpClient()

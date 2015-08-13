@@ -1,5 +1,7 @@
 package com.somexapps.ripple.api.tracks;
 
+import com.somexapps.ripple.api.SoundCloudUserResult;
+
 /**
  * Copyright 2015 Michael Limb
  * <p/>
@@ -43,8 +45,7 @@ public class SoundCloudTrackResult {
     private boolean streamable;
     private String tag_list;
     private String track_type;
-    // TODO: Implement user
-    //private User user;
+    private SoundCloudUserResult user;
     private int likes_count;
     private String attachments_uri;
     private int bpm;
@@ -283,6 +284,14 @@ public class SoundCloudTrackResult {
 
     public void setTrack_type(String track_type) {
         this.track_type = track_type;
+    }
+
+    public SoundCloudUserResult getUser() {
+        return user;
+    }
+
+    public void setUser(SoundCloudUserResult user) {
+        this.user = user;
     }
 
     public int getLikes_count() {
