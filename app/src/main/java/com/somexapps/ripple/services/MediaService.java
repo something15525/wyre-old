@@ -5,6 +5,7 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -154,7 +155,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             public void onPlay() {
                 super.onPlay();
                 Log.d(TAG, "Playing media");
-                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                buildNotification(generateAction(R.drawable.ic_pause_white_36dp,
                         getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
@@ -162,7 +163,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             public void onPause() {
                 super.onPause();
                 Log.d(TAG, "Pausing media");
-                buildNotification(generateAction(android.R.drawable.ic_media_play,
+                buildNotification(generateAction(R.drawable.ic_play_arrow_white_36dp,
                         getString(R.string.media_service_notification_play), ACTION_PLAY));
             }
 
@@ -172,7 +173,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                 Log.d(TAG, "Skipping to next song");
 
                 // Update the notification with the next song info
-                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                buildNotification(generateAction(R.drawable.ic_pause_white_36dp,
                         getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
@@ -182,7 +183,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                 Log.d(TAG, "Skipping to previous song");
 
                 // Update the notification with the previous song info
-                buildNotification(generateAction(android.R.drawable.ic_media_pause,
+                buildNotification(generateAction(R.drawable.ic_pause_white_36dp,
                         getString(R.string.media_service_notification_pause), ACTION_PAUSE));
             }
 
@@ -349,6 +350,10 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
         // Create media notification
         final android.support.v4.app.NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(
+                        BitmapFactory.decodeResource(getResources(),
+                                R.drawable.ic_album_white_48dp)
+                )
                 .setContentTitle(playingSong.getTitle())
                 .setContentText(playingSong.getArtist())
                 .setDeleteIntent(pendingIntent)
@@ -369,7 +374,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
 
         // Add previous action if there is previous media
         if (!previousDisabled) {
-            builder.addAction(generateAction(android.R.drawable.ic_media_previous,
+            builder.addAction(generateAction(R.drawable.ic_skip_previous_white_36dp,
                     getString(R.string.media_service_notification_prev), ACTION_PREVIOUS));
         }
 
@@ -378,7 +383,7 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
 
         // Add next action if there is next media
         if (!nextDisabled) {
-            builder.addAction(generateAction(android.R.drawable.ic_media_next,
+            builder.addAction(generateAction(R.drawable.ic_skip_next_white_36dp,
                     getString(R.string.media_service_notification_next), ACTION_NEXT));
         }
 
