@@ -1,6 +1,7 @@
 package com.somexapps.ripple.adapters;
 
 import android.content.Context;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import android.widget.TextView;
 
 import com.somexapps.ripple.R;
 import com.somexapps.ripple.models.Song;
+import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
@@ -69,7 +71,20 @@ public class SongGridAdapter extends ArrayAdapter<Song> {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        // TODO: Set up song images
+        // Set up song image
+        if (song.getAlbumArtPath() != null) {
+            if (song.getAlbumArtPath().startsWith("http")) {
+                // Request image
+                Picasso
+                        .with(getContext())
+                        .load(
+                                Uri.parse(song.getAlbumArtPath())
+                        )
+                        .into(viewHolder.songImageView);
+            } else {
+                viewHolder.songImageView.setImageURI(Uri.parse(song.getAlbumArtPath()));
+            }
+        }
         viewHolder.songName.setText(song.getTitle());
         viewHolder.artistName.setText(song.getArtist());
 

@@ -324,6 +324,7 @@ public class RippleMainActivity extends AppCompatActivity {
                         profile.setIconBitmap(null);
 
                         // Get profile image
+                        // TODO: Use picasso to load the profile image
                         new OkHttpClient()
                                 .newCall(
                                         new Request.Builder()

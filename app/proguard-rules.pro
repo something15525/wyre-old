@@ -21,3 +21,6 @@
 -keep @io.realm.annotations.RealmModule class *
 -dontwarn javax.**
 -dontwarn io.realm.**
+
+# Proguard configs for Picasso
+-dontwarn com.squareup.okhttp.**

@@ -4,7 +4,10 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationManagerCompat;
@@ -16,6 +19,8 @@ import android.util.Log;
 
 import com.somexapps.ripple.R;
 import com.somexapps.ripple.models.Song;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -337,8 +342,12 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
                 0
         );
 
+        // Get notification manager
+        final NotificationManagerCompat managerCompat =
+                NotificationManagerCompat.from(getApplicationContext());
+
         // Create media notification
-        android.support.v4.app.NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+        final android.support.v4.app.NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(playingSong.getTitle())
                 .setContentText(playingSong.getArtist())
@@ -392,7 +401,39 @@ public class MediaService extends Service implements MediaPlayer.OnPreparedListe
             builder.setOngoing(false);
         }
 
-        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
+        // Check if we have a image path
+        if (playingSong.getAlbumArtPath() != null &&
+                playingSong.getAlbumArtPath().startsWith("http")) {
+            // Set up image target
+            Target iconTarget = new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                    // Set icon
+                    builder.setLargeIcon(bitmap);
+
+                    // Update notification
+                    managerCompat.notify(MEDIA_NOTIFICATION_REQUEST_CODE, builder.build());
+                }
+
+                @Override
+                public void onBitmapFailed(Drawable errorDrawable) {
+                    // do nothing
+                }
+
+                @Override
+                public void onPrepareLoad(Drawable placeHolderDrawable) {
+                    // do nothing
+                }
+            };
+
+            // Start the image load
+            Picasso
+                    .with(getApplicationContext())
+                    .load(Uri.parse(playingSong.getAlbumArtPath()))
+                    .into(iconTarget);
+        }
+
+        // Update the notification
         managerCompat.notify(MEDIA_NOTIFICATION_REQUEST_CODE, builder.build());
     }
 

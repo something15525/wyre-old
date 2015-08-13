@@ -42,4 +42,7 @@ dependencies {
 
     // Database management
     compile 'io.realm:realm-android:0.82.1'
+
+    // Image loading
+    compile 'com.squareup.picasso:picasso:2.5.2'
 }
