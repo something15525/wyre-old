@@ -18,7 +18,7 @@ After downloading Android Studio, open up the cloned repository and you should b
     <string name="soundcloud_client_secret" translatable="false">YOUR_CLIENT_SECRET</string>
 </resources>
 ```
-3. You should be good to go, build away!
+You should be good to go, build away!
 
 ## License
 ```
