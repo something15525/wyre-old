@@ -99,6 +99,7 @@ public class RippleMainActivity extends AppCompatActivity {
 
     private AccountHeader appDrawerHeader;
     private Drawer appDrawer;
+    private boolean soundCloudSongsLoaded = false;
 
     private ArrayList<IProfile> appDrawerProfiles;
 
@@ -202,6 +203,23 @@ public class RippleMainActivity extends AppCompatActivity {
 
         // Make sure profiles are up to date
         updateProfiles();
+
+        if (!soundCloudSongsLoaded) {
+            // Check if logged in
+            if (getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
+                    .getBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)) {
+                // TODO: Remove this, data concerns for now, need to cache this result
+                if (ConnectionUtils.isOnWifi(this)) {
+                    // Refresh SoundCloud stream
+                    refreshSoundCloudTracks();
+                } else {
+                    new AlertDialog.Builder(this)
+                            .setMessage("Please connect to WiFi to see your SoundCloud tracks.")
+                            .setNeutralButton(android.R.string.ok, null)
+                            .show();
+                }
+            }
+        }
     }
 
     private void initSoundCloudService() {
@@ -269,17 +287,21 @@ public class RippleMainActivity extends AppCompatActivity {
                                                 }
                                             });
                                 }
+
+                                // Flag boolean as true
+                                soundCloudSongsLoaded = true;
                             }
                         }
 
                         @Override
-                        public void failure(RetrofitError error) {
+                        public void failure(final RetrofitError error) {
                             // Show error on UI thread
                             RippleMainActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     new AlertDialog.Builder(RippleMainActivity.this)
-                                            .setMessage("Error retrieving your SoundCloud Stream.")
+                                            .setMessage("Error retrieving your SoundCloud Stream: "
+                                                    + error.getMessage())
                                             .setNeutralButton(android.R.string.ok, null)
                                             .show();
                                 }
