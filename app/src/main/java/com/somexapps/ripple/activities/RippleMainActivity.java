@@ -301,7 +301,8 @@ public class RippleMainActivity extends AppCompatActivity {
                                 public void run() {
                                     new AlertDialog.Builder(RippleMainActivity.this)
                                             .setMessage("Error retrieving your SoundCloud Stream: "
-                                                    + error.getMessage())
+                                                    + error.getMessage() + ". Please logout and log" +
+                                                    "back in.")
                                             .setNeutralButton(android.R.string.ok, null)
                                             .show();
                                 }
