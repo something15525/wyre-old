@@ -1,4 +1,4 @@
-package com.somexapps.ripple.activities;
+package com.somexapps.wyre.activities;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -10,12 +10,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
-import com.somexapps.ripple.R;
-import com.somexapps.ripple.api.AccessTokenResult;
-import com.somexapps.ripple.api.LoginService;
-import com.somexapps.ripple.models.AccessToken;
-import com.somexapps.ripple.services.ServiceGenerator;
-import com.somexapps.ripple.utils.Constants;
+import com.somexapps.wyre.R;
+import com.somexapps.wyre.api.AccessTokenResult;
+import com.somexapps.wyre.api.LoginService;
+import com.somexapps.wyre.models.AccessToken;
+import com.somexapps.wyre.services.ServiceGenerator;
+import com.somexapps.wyre.utils.Constants;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;

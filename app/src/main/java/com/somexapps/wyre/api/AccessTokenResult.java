@@ -1,7 +1,4 @@
-package com.somexapps.ripple.models;
-
-import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
+package com.somexapps.wyre.api;
 
 /**
  * Copyright 2015 Michael Limb, Marcus Pöhls
@@ -19,32 +16,16 @@ import io.realm.annotations.PrimaryKey;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class AccessToken extends RealmObject {
-    @PrimaryKey
-    private String accessToken;
+public class AccessTokenResult {
+    private String access_token;
     private String scope;
 
-    public AccessToken() {
-    }
-
-    public AccessToken(String accessToken, String scope) {
-        this.accessToken = accessToken;
-        this.scope = scope;
-    }
-
     public String getAccessToken() {
-        return accessToken;
-    }
-
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
+        return access_token;
     }
 
     public String getScope() {
         return scope;
     }
-
-    public void setScope(String scope) {
-        this.scope = scope;
-    }
 }
+

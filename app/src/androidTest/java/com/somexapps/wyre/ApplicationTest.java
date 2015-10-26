@@ -1,4 +1,4 @@
-package com.somexapps.ripple;
+package com.somexapps.wyre;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

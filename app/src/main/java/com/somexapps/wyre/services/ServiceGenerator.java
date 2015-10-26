@@ -1,8 +1,8 @@
-package com.somexapps.ripple.services;
+package com.somexapps.wyre.services;
 
 import android.util.Base64;
 
-import com.somexapps.ripple.api.AccessTokenResult;
+import com.somexapps.wyre.api.AccessTokenResult;
 import com.squareup.okhttp.OkHttpClient;
 
 import retrofit.RequestInterceptor;

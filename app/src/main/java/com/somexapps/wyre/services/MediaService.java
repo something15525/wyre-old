@@ -1,4 +1,4 @@
-package com.somexapps.ripple.services;
+package com.somexapps.wyre.services;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -18,8 +18,8 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
-import com.somexapps.ripple.R;
-import com.somexapps.ripple.models.Song;
+import com.somexapps.wyre.R;
+import com.somexapps.wyre.models.Song;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 

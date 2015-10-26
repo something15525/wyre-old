@@ -1,4 +1,4 @@
-package com.somexapps.ripple.activities;
+package com.somexapps.wyre.activities;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -26,19 +26,19 @@ import com.mikepenz.materialdrawer.accountswitcher.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
-import com.somexapps.ripple.R;
-import com.somexapps.ripple.adapters.SongGridAdapter;
-import com.somexapps.ripple.api.SoundCloudClient;
-import com.somexapps.ripple.api.SoundCloudUserResult;
-import com.somexapps.ripple.api.activities.ActivitiesResult;
-import com.somexapps.ripple.api.activities.CollectionResult;
-import com.somexapps.ripple.api.tracks.SoundCloudTrackResult;
-import com.somexapps.ripple.models.AccessToken;
-import com.somexapps.ripple.models.Song;
-import com.somexapps.ripple.services.MediaService;
-import com.somexapps.ripple.services.ServiceGenerator;
-import com.somexapps.ripple.utils.ConnectionUtils;
-import com.somexapps.ripple.utils.Constants;
+import com.somexapps.wyre.R;
+import com.somexapps.wyre.adapters.SongGridAdapter;
+import com.somexapps.wyre.api.SoundCloudClient;
+import com.somexapps.wyre.api.SoundCloudUserResult;
+import com.somexapps.wyre.api.activities.ActivitiesResult;
+import com.somexapps.wyre.api.activities.CollectionResult;
+import com.somexapps.wyre.api.tracks.SoundCloudTrackResult;
+import com.somexapps.wyre.models.AccessToken;
+import com.somexapps.wyre.models.Song;
+import com.somexapps.wyre.services.MediaService;
+import com.somexapps.wyre.services.ServiceGenerator;
+import com.somexapps.wyre.utils.ConnectionUtils;
+import com.somexapps.wyre.utils.Constants;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -70,9 +70,9 @@ import retrofit.RetrofitError;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-public class RippleMainActivity extends AppCompatActivity {
+public class WyreActivity extends AppCompatActivity {
     // Used for logging
-    private final static String TAG = RippleMainActivity.class.getSimpleName();
+    private final static String TAG = WyreActivity.class.getSimpleName();
 
     /**
      * Begin view bindings
@@ -126,7 +126,7 @@ public class RippleMainActivity extends AppCompatActivity {
                     @Override
                     public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
                         // Show login activity
-                        startActivity(new Intent(RippleMainActivity.this, LoginActivity.class));
+                        startActivity(new Intent(WyreActivity.this, LoginActivity.class));
                         return true;
                     }
                 })
@@ -296,10 +296,10 @@ public class RippleMainActivity extends AppCompatActivity {
                         @Override
                         public void failure(final RetrofitError error) {
                             // Show error on UI thread
-                            RippleMainActivity.this.runOnUiThread(new Runnable() {
+                            WyreActivity.this.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    new AlertDialog.Builder(RippleMainActivity.this)
+                                    new AlertDialog.Builder(WyreActivity.this)
                                             .setMessage("Error retrieving your SoundCloud Stream: "
                                                     + error.getMessage() + ". Please logout and log" +
                                                     "back in.")
@@ -372,7 +372,7 @@ public class RippleMainActivity extends AppCompatActivity {
                                             updateOrAddToProfileList(profile);
 
                                             // Update profiles on UI thread
-                                            RippleMainActivity.this.runOnUiThread(new Runnable() {
+                                            WyreActivity.this.runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
                                                     appDrawerHeader.setProfiles(appDrawerProfiles);
@@ -425,7 +425,7 @@ public class RippleMainActivity extends AppCompatActivity {
 
                 // Make sure AccountHeader selection is closed
                 if (appDrawerHeader.isSelectionListShown()) {
-                    appDrawerHeader.toggleSelectionList(RippleMainActivity.this);
+                    appDrawerHeader.toggleSelectionList(WyreActivity.this);
                 }
             }
         };
@@ -434,7 +434,7 @@ public class RippleMainActivity extends AppCompatActivity {
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             updateRunnable.run();
         } else {
-            RippleMainActivity.this.runOnUiThread(updateRunnable);
+            WyreActivity.this.runOnUiThread(updateRunnable);
         }
     }
 

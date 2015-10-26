@@ -1,4 +1,4 @@
-package com.somexapps.ripple.api.activities;
+package com.somexapps.wyre.api.activities;
 
 import java.util.List;
 

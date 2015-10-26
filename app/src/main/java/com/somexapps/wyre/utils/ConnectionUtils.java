@@ -1,4 +1,4 @@
-package com.somexapps.ripple.utils;
+package com.somexapps.wyre.utils;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

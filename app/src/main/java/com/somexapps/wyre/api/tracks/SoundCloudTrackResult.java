@@ -1,6 +1,6 @@
-package com.somexapps.ripple.api.tracks;
+package com.somexapps.wyre.api.tracks;
 
-import com.somexapps.ripple.api.SoundCloudUserResult;
+import com.somexapps.wyre.api.SoundCloudUserResult;
 
 /**
  * Copyright 2015 Michael Limb

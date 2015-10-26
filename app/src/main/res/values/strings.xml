@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Ripple</string>
+    <string name="app_name">wyre</string>
 
     <!-- Music notification controls -->
     <string name="media_service_notification_next">Next</string>

@@ -1,4 +1,4 @@
-package com.somexapps.ripple.models;
+package com.somexapps.wyre.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;

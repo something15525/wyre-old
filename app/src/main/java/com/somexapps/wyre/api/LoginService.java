@@ -1,4 +1,4 @@
-package com.somexapps.ripple.api;
+package com.somexapps.wyre.api;
 
 import retrofit.http.Body;
 import retrofit.http.POST;

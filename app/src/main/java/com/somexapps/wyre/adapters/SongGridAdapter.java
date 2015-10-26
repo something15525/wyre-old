@@ -1,4 +1,4 @@
-package com.somexapps.ripple.adapters;
+package com.somexapps.wyre.adapters;
 
 import android.content.Context;
 import android.net.Uri;
@@ -9,8 +9,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.somexapps.ripple.R;
-import com.somexapps.ripple.models.Song;
+import com.somexapps.wyre.R;
+import com.somexapps.wyre.models.Song;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;

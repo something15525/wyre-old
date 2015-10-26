@@ -1,4 +1,4 @@
-package com.somexapps.ripple.api;
+package com.somexapps.wyre.api;
 
 /**
  * Copyright 2015 Michael Limb

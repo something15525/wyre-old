@@ -1,6 +1,6 @@
-package com.somexapps.ripple.api.activities;
+package com.somexapps.wyre.api.activities;
 
-import com.somexapps.ripple.api.tracks.SoundCloudTrackResult;
+import com.somexapps.wyre.api.tracks.SoundCloudTrackResult;
 
 /**
  * Copyright 2015 Michael Limb

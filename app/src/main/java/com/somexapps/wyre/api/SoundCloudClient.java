@@ -1,6 +1,6 @@
-package com.somexapps.ripple.api;
+package com.somexapps.wyre.api;
 
-import com.somexapps.ripple.api.activities.ActivitiesResult;
+import com.somexapps.wyre.api.activities.ActivitiesResult;
 
 import retrofit.Callback;
 import retrofit.http.GET;
