@@ -83,6 +83,11 @@ public class WyreActivity extends AppCompatActivity {
      */
 
     /**
+     * Holder for adapter to handle song grid.
+     */
+    private SongGridAdapter songGridAdapter;
+
+    /**
      * Holder for the list of songs.
      */
     private ArrayList<Song> mSongs;
@@ -180,8 +185,8 @@ public class WyreActivity extends AppCompatActivity {
         }
 
         // Set up adapter and attach
-        final SongGridAdapter adapter = new SongGridAdapter(this, mSongs);
-        mSongGrid.setAdapter(adapter);
+        songGridAdapter = new SongGridAdapter(this, mSongs);
+        mSongGrid.setAdapter(songGridAdapter);
 
         // Set up onClick listener for playing songs
         mSongGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -284,6 +289,16 @@ public class WyreActivity extends AppCompatActivity {
 
                                                     // Add to list
                                                     mSongs.add(newSong);
+
+                                                    // Update list
+                                                    if (songGridAdapter != null) {
+                                                        runOnUiThread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                songGridAdapter.notifyDataSetChanged();
+                                                            }
+                                                        });
+                                                    }
                                                 }
                                             });
                                 }
