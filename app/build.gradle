@@ -32,11 +32,12 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.0'
 
     // View Injection
-    compile 'com.jakewharton:butterknife:7.0.0'
+    compile 'com.jakewharton:butterknife:7.0.1'
 
     // API calls
+    // TODO: Update to 2.0.0
     compile 'com.squareup.retrofit:retrofit:1.9.0'
-    compile 'com.squareup.okhttp:okhttp:2.4.0'
+    compile 'com.squareup.okhttp:okhttp:2.5.0'
 
     // Drawer lib
     compile('com.mikepenz:materialdrawer:4.4.1@aar') {

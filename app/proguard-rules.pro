@@ -22,5 +22,11 @@
 -dontwarn javax.**
 -dontwarn io.realm.**
 
+# Proguard configs for retrofit
+-dontwarn retrofit.**
+-keep class retrofit.** { *; }
+-keepattributes Signature
+-keepattributes Exceptions
+
 # Proguard configs for Picasso
 -dontwarn com.squareup.okhttp.**
