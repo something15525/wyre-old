@@ -17,15 +17,16 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
+import com.mikepenz.fontawesome_typeface_library.FontAwesome;
 import com.mikepenz.iconics.IconicsDrawable;
-import com.mikepenz.iconics.typeface.FontAwesome;
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.accountswitcher.AccountHeader;
-import com.mikepenz.materialdrawer.accountswitcher.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
+import com.mikepenz.materialdrawer.util.DrawerUIUtils;
 import com.somexapps.wyre.R;
 import com.somexapps.wyre.adapters.SongGridAdapter;
 import com.somexapps.wyre.api.SoundCloudClient;
@@ -125,7 +126,7 @@ public class WyreActivity extends AppCompatActivity {
                         new ProfileDrawerItem()
                                 .withName(getString(R.string.account_header_drawer_switch_account_title))
                                 .withIcon(getResources().getDrawable(android.R.drawable.btn_plus))
-                                .setSelectable(false)
+                                .withSelectable(false)
                 )
                 .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
                     @Override
@@ -357,9 +358,11 @@ public class WyreActivity extends AppCompatActivity {
                     if (appDrawerProfiles.size() > 0) {
                         // Grab profile and modify
                         final IProfile profile = appDrawerProfiles.remove(0);
-                        profile.setName(soundCloudUserResult.getFull_name());
-                        profile.setEmail(soundCloudUserResult.getUsername());
-                        profile.setIconBitmap(null);
+                        profile.withName(soundCloudUserResult.getFull_name());
+                        profile.withEmail(soundCloudUserResult.getUsername());
+                        profile.withIcon(
+                                DrawerUIUtils.getPlaceHolder(WyreActivity.this)
+                        );
 
                         // Get profile image
                         // TODO: Use picasso to load the profile image
@@ -382,7 +385,7 @@ public class WyreActivity extends AppCompatActivity {
 
                                         if (bitmap != null) {
                                             // Set the bitmap to the profile
-                                            profile.setIconBitmap(bitmap);
+                                            profile.withIcon(bitmap);
 
                                             updateOrAddToProfileList(profile);
 
@@ -411,9 +414,11 @@ public class WyreActivity extends AppCompatActivity {
         } else {
             // Grab profile and modify to add account
             final IProfile profile = appDrawerProfiles.remove(0);
-            profile.setName(getString(R.string.account_header_drawer_switch_account_title));
-            profile.setEmail(null);
-            profile.setIconBitmap(null);
+            profile.withName(getString(R.string.account_header_drawer_switch_account_title));
+            profile.withEmail(null);
+            profile.withIcon(
+                    DrawerUIUtils.getPlaceHolder(WyreActivity.this)
+            );
 
             updateOrAddToProfileList(profile);
         }

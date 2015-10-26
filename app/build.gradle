@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
 
     defaultConfig {
         applicationId "com.somexapps.wyre"
         minSdkVersion 14
-        targetSdkVersion 22
+        targetSdkVersion 23
         versionCode 1
         versionName "DEV"
     }
@@ -29,7 +29,7 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:22.2.1'
+    compile 'com.android.support:appcompat-v7:23.1.0'
 
     // View Injection
     compile 'com.jakewharton:butterknife:7.0.0'
@@ -39,12 +39,17 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp:2.4.0'
 
     // Drawer lib
-    compile('com.mikepenz:materialdrawer:3.1.2@aar') {
+    compile('com.mikepenz:materialdrawer:4.4.1@aar') {
         transitive = true
     }
 
+    // Font/Icon libs
+    compile 'com.mikepenz:iconics-core:1.7.9@aar'
+    compile 'com.mikepenz:google-material-typeface:1.2.0.1@aar'
+    compile 'com.mikepenz:fontawesome-typeface:4.4.0.1@aar'
+
     // Database management
-    compile 'io.realm:realm-android:0.82.1'
+    compile 'io.realm:realm-android:0.84.0'
 
     // Image loading
     compile 'com.squareup.picasso:picasso:2.5.2'
