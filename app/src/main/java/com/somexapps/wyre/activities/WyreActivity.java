@@ -93,21 +93,7 @@ public class WyreActivity extends AppCompatActivity {
      */
     private ArrayList<Song> mSongs;
 
-    /**
-     * The client used to communicate with the SoundCloud API.
-     */
-    private SoundCloudClient soundCloudClient;
-
-    /**
-     * The AccessToken used for authenticated SoundCloud requests.
-     */
-    private AccessToken soundCloudAccessToken;
-
     private AccountHeader appDrawerHeader;
-    private Drawer appDrawer;
-    private boolean soundCloudSongsLoaded = false;
-
-    private ArrayList<IProfile> appDrawerProfiles;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,17 +118,13 @@ public class WyreActivity extends AppCompatActivity {
                     @Override
                     public boolean onProfileChanged(View view, IProfile iProfile, boolean b) {
                         // Show login activity
-                        startActivity(new Intent(WyreActivity.this, LoginActivity.class));
                         return true;
                     }
                 })
                 .build();
 
-        // Grab profiles
-        appDrawerProfiles = appDrawerHeader.getProfiles();
-
         // Set up the drawer
-        appDrawer = new DrawerBuilder()
+        new DrawerBuilder()
                 .withActivity(this)
                 .withToolbar(appToolbar)
                 .withAccountHeader(appDrawerHeader)
@@ -164,27 +146,6 @@ public class WyreActivity extends AppCompatActivity {
         // Refresh list of music
         refreshMusic();
 
-        // Start up SoundCloud client
-        initSoundCloudService();
-
-        // Make sure profiles are up to date
-        updateProfiles();
-
-        // Check if logged in
-        if (getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
-                .getBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)) {
-            // TODO: Remove this, data concerns for now, need to cache this result
-            if (ConnectionUtils.isOnWifi(this)) {
-                // Refresh SoundCloud stream
-                refreshSoundCloudTracks();
-            } else {
-                new AlertDialog.Builder(this)
-                        .setMessage("Please connect to WiFi to see your SoundCloud tracks.")
-                        .setNeutralButton(android.R.string.ok, null)
-                        .show();
-            }
-        }
-
         // Set up adapter and attach
         songGridAdapter = new SongGridAdapter(this, mSongs);
         mSongGrid.setAdapter(songGridAdapter);
@@ -204,280 +165,10 @@ public class WyreActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
-
-        // Make sure profiles are up to date
-        updateProfiles();
-
-        if (!soundCloudSongsLoaded) {
-            // Check if logged in
-            if (getSharedPreferences(Constants.RIPPLE_PREFS_NAME, MODE_PRIVATE)
-                    .getBoolean(Constants.PREF_SOUND_CLOUD_LOGGED_IN, false)) {
-                // TODO: Remove this, data concerns for now, need to cache this result
-                if (ConnectionUtils.isOnWifi(this)) {
-                    // Refresh SoundCloud stream
-                    refreshSoundCloudTracks();
-                } else {
-                    new AlertDialog.Builder(this)
-                            .setMessage("Please connect to WiFi to see your SoundCloud tracks.")
-                            .setNeutralButton(android.R.string.ok, null)
-                            .show();
-                }
-            }
-        }
-    }
-
-    private void initSoundCloudService() {
-        if (soundCloudClient == null) {
-            soundCloudClient = ServiceGenerator.createService(
-                    SoundCloudClient.class,
-                    SoundCloudClient.BASE_URL
-            );
-        }
-    }
-
-    /**
-     * Queries the SoundCloud API for tracks and updates the UI when finished parsing the data.
-     */
-    private void refreshSoundCloudTracks() {
-        if (soundCloudClient != null &&
-                soundCloudAccessToken != null) {
-            soundCloudClient.getActivities(
-                    soundCloudAccessToken.getAccessToken(),
-                    50,
-                    new retrofit.Callback<ActivitiesResult>() {
-                        @Override
-                        public void success(ActivitiesResult activitiesResult, retrofit.client.Response response) {
-                            // Get the collections
-                            List<CollectionResult> collectionResultList =
-                                    activitiesResult.getCollection();
-
-                            // Loop through each and add song
-                            for (CollectionResult result : collectionResultList) {
-                                // Get the track information
-                                SoundCloudTrackResult trackResult = result.getOrigin();
-
-                                // Create song from track information
-                                if (trackResult.isStreamable()
-                                        && trackResult.getStream_url() != null) {
-                                    final Song newSong = new Song();
-                                    newSong.setAlbumArtPath(trackResult.getArtwork_url());
-                                    newSong.setArtist(trackResult.getUser().getUsername());
-                                    newSong.setTitle(trackResult.getTitle());
-                                    newSong.setDuration(Long.toString(trackResult.getDuration()));
-
-                                    new OkHttpClient()
-                                            .newCall(
-                                                    new Request.Builder()
-                                                            .url(trackResult.getStream_url() +
-                                                                    "?client_id=" + getString(R.string.soundcloud_client_id))
-                                                            .build()
-                                            )
-                                            .enqueue(new Callback() {
-                                                @Override
-                                                public void onFailure(Request request, IOException e) {
-                                                    Log.e(TAG, "Error grabbing stream URL: " + e.getMessage());
-                                                }
-
-                                                @Override
-                                                public void onResponse(Response response) throws IOException {
-                                                    if (response.request().httpUrl() != null) {
-                                                        newSong.setData(
-                                                                response.request().httpUrl().url().toString()
-                                                        );
-                                                    }
-
-                                                    // Add to list
-                                                    mSongs.add(newSong);
-
-                                                    // Update list
-                                                    if (songGridAdapter != null) {
-                                                        runOnUiThread(new Runnable() {
-                                                            @Override
-                                                            public void run() {
-                                                                songGridAdapter.notifyDataSetChanged();
-                                                            }
-                                                        });
-                                                    }
-                                                }
-                                            });
-                                }
-
-                                // Flag boolean as true
-                                soundCloudSongsLoaded = true;
-                            }
-                        }
-
-                        @Override
-                        public void failure(final RetrofitError error) {
-                            // Show error on UI thread
-                            WyreActivity.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    new AlertDialog.Builder(WyreActivity.this)
-                                            .setMessage("Error retrieving your SoundCloud Stream: "
-                                                    + error.getMessage() + ". Please logout and log" +
-                                                    "back in.")
-                                            .setNeutralButton(android.R.string.ok, null)
-                                            .show();
-                                }
-                            });
-                        }
-                    }
-            );
-        }
-    }
-
-    /**
-     * This method checks the Realm database for any access tokens, then updates the profiles based
-     * on the result.
-     */
-    private void updateProfiles() {
-        // Get realm instance and perform query
-        Realm theRealm = Realm.getInstance(this);
-        RealmQuery<AccessToken> accessQuery = new RealmQuery<>(theRealm, AccessToken.class);
-        RealmResults<AccessToken> accessResults = accessQuery.findAll();
-
-        // Make sure we have results, otherwise go back to placeholder
-        if (accessResults.size() > 0) {
-            // Get the first token (should only be one)
-            soundCloudAccessToken = accessResults.first();
-
-            // Grab string for oauthToken so we can cross threads with it.
-            final String oauthToken = soundCloudAccessToken.getAccessToken();
-
-            soundCloudClient.getUser(oauthToken, new retrofit.Callback<SoundCloudUserResult>() {
-                @Override
-                public void success(SoundCloudUserResult soundCloudUserResult,
-                                    retrofit.client.Response response) {
-                    // Get list of profiles (should be just one)
-                    appDrawerProfiles = appDrawerHeader.getProfiles();
-
-                    // Modify the first drawer profile
-                    if (appDrawerProfiles.size() > 0) {
-                        // Grab profile and modify
-                        final IProfile profile = appDrawerProfiles.remove(0);
-                        profile.withName(soundCloudUserResult.getFull_name());
-                        profile.withEmail(soundCloudUserResult.getUsername());
-                        profile.withIcon(
-                                DrawerUIUtils.getPlaceHolder(WyreActivity.this)
-                        );
-
-                        // Get profile image
-                        // TODO: Use picasso to load the profile image
-                        new OkHttpClient()
-                                .newCall(
-                                        new Request.Builder()
-                                                .url(soundCloudUserResult.getAvatar_url())
-                                                .build())
-                                .enqueue(new Callback() {
-                                    @Override
-                                    public void onFailure(Request request, IOException e) {
-                                        Log.e("TAG", "TAG");
-                                    }
-
-                                    @Override
-                                    public void onResponse(Response response) throws IOException {
-                                        Bitmap bitmap = BitmapFactory.decodeStream(
-                                                response.body().byteStream()
-                                        );
-
-                                        if (bitmap != null) {
-                                            // Set the bitmap to the profile
-                                            profile.withIcon(bitmap);
-
-                                            updateOrAddToProfileList(profile);
-
-                                            // Update profiles on UI thread
-                                            WyreActivity.this.runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    appDrawerHeader.setProfiles(appDrawerProfiles);
-                                                    appDrawerHeader.setActiveProfile(profile);
-                                                }
-                                            });
-                                        }
-                                    }
-                                });
-
-                        // Update in list
-                        updateOrAddToProfileList(profile);
-                    }
-                }
-
-                @Override
-                public void failure(RetrofitError error) {
-                    Log.e(TAG, "Error grabbing user info: " + error.getMessage());
-                }
-            });
-        } else {
-            // Grab profile and modify to add account
-            final IProfile profile = appDrawerProfiles.remove(0);
-            profile.withName(getString(R.string.account_header_drawer_switch_account_title));
-            profile.withEmail(null);
-            profile.withIcon(
-                    DrawerUIUtils.getPlaceHolder(WyreActivity.this)
-            );
-
-            updateOrAddToProfileList(profile);
-        }
-    }
-
-    private void updateOrAddToProfileList(final IProfile profileToUpdate) {
-        // Find the profile in the list and update it if it exists
-        int profileLocation = appDrawerProfiles.indexOf(profileToUpdate);
-        if (profileLocation > -1) {
-            // Update the profile in the list
-            appDrawerProfiles.set(profileLocation, profileToUpdate);
-        } else {
-            // Add the profile to the list
-            appDrawerProfiles.add(0, profileToUpdate);
-        }
-
-        // Create runnable to update UI
-        Runnable updateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // Update profiles
-                appDrawerHeader.setProfiles(appDrawerProfiles);
-                appDrawerHeader.setActiveProfile(profileToUpdate);
-
-                // Make sure AccountHeader selection is closed
-                if (appDrawerHeader.isSelectionListShown()) {
-                    appDrawerHeader.toggleSelectionList(WyreActivity.this);
-                }
-            }
-        };
-
-        // Update the UI on main thread
-        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            updateRunnable.run();
-        } else {
-            WyreActivity.this.runOnUiThread(updateRunnable);
-        }
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        /*if (id == R.id.action_settings) {
-            return true;
-        }*/
-
-        return super.onOptionsItemSelected(item);
     }
 
     private void refreshMusic() {
@@ -509,22 +200,25 @@ public class WyreActivity extends AppCompatActivity {
         // Clear the list
         mSongs.clear();
 
-        while(cursor.moveToNext()) {
-            // Create new song
-            Song currentSong = new Song();
+        // Make sure cursor was created successfully
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                // Create new song
+                Song currentSong = new Song();
 
-            // Set data
-            currentSong.setArtist(cursor.getString(1));
-            currentSong.setTitle(cursor.getString(2));
-            currentSong.setData(cursor.getString(3));
-            currentSong.setDisplayName(cursor.getString(4));
-            currentSong.setDuration(cursor.getString(5));
+                // Set data
+                currentSong.setArtist(cursor.getString(1));
+                currentSong.setTitle(cursor.getString(2));
+                currentSong.setData(cursor.getString(3));
+                currentSong.setDisplayName(cursor.getString(4));
+                currentSong.setDuration(cursor.getString(5));
 
-            // Add to the list
-            mSongs.add(currentSong);
+                // Add to the list
+                mSongs.add(currentSong);
+            }
+
+            // Close the cursor
+            cursor.close();
         }
-
-        // Close the cursor
-        cursor.close();
     }
 }
