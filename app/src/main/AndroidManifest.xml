@@ -22,6 +22,9 @@
         </activity>
 
         <service android:name=".services.MediaService"/>
+
+        <!-- Used for pausing audio when the wired headset is unplugged. -->
+        <receiver android:name=".services.AudioPlugChangeReceiver"/>
     </application>
 
 </manifest>
